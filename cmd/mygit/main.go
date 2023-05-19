@@ -1,14 +1,15 @@
 package main
 
 import (
+	"compress/zlib"
 	"fmt"
+	"io"
 	"os"
+	"strings"
 )
 
 // Usage: your_git.sh <command> <arg1> <arg2> ...
 func main() {
-	// You can use print statements as follows for debugging, they'll be visible when running tests.
-	fmt.Println("Logs from your program will appear here!")
 
 	if len(os.Args) < 2 {
 		fmt.Fprintf(os.Stderr, "usage: mygit <command> [<args>...]\n")
@@ -22,16 +23,25 @@ func main() {
 				fmt.Fprintf(os.Stderr, "Error creating directory: %s\n", err)
 			}
 		}
-
 		headFileContents := []byte("ref: refs/heads/master\n")
 		if err := os.WriteFile(".git/HEAD", headFileContents, 0644); err != nil {
 			fmt.Fprintf(os.Stderr, "Error writing file: %s\n", err)
 		}
-
 		fmt.Println("Initialized git directory")
-
+	case "cat-file":
+		catFile(os.Args[3])		
 	default:
 		fmt.Fprintf(os.Stderr, "Unknown command %s\n", command)
 		os.Exit(1)
 	}
+}
+
+func catFile(sha string) {
+	path := fmt.Sprintf(".git/objects/%v/%v", sha[0:2], sha[2:])
+	file, _ := os.Open(path)
+	r, _ := zlib.NewReader(io.Reader(file))
+	s, _ := io.ReadAll(r)
+	parts := strings.Split(string(s),"\x00")
+	fmt.Print(parts[1])
+	r.Close()
 }
