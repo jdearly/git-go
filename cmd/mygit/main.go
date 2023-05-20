@@ -1,11 +1,8 @@
 package main
 
 import (
-	"compress/zlib"
 	"fmt"
-	"io"
 	"os"
-	"strings"
 )
 
 // Usage: your_git.sh <command> <arg1> <arg2> ...
@@ -15,7 +12,7 @@ func main() {
 		fmt.Fprintf(os.Stderr, "usage: mygit <command> [<args>...]\n")
 		os.Exit(1)
 	}
-
+	var err error
 	switch command := os.Args[1]; command {
 	case "init":
 		for _, dir := range []string{".git", ".git/objects", ".git/refs"} {
@@ -29,19 +26,14 @@ func main() {
 		}
 		fmt.Println("Initialized git directory")
 	case "cat-file":
-		catFile(os.Args[3])		
+		err = catFileCmd(os.Args[1:])
 	default:
 		fmt.Fprintf(os.Stderr, "Unknown command %s\n", command)
 		os.Exit(1)
 	}
+
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "%v\n", err.Error())
+	}
 }
 
-func catFile(sha string) {
-	path := fmt.Sprintf(".git/objects/%v/%v", sha[0:2], sha[2:])
-	file, _ := os.Open(path)
-	r, _ := zlib.NewReader(io.Reader(file))
-	s, _ := io.ReadAll(r)
-	parts := strings.Split(string(s),"\x00")
-	fmt.Print(parts[1])
-	r.Close()
-}
